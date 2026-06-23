@@ -151,37 +151,29 @@ def render_page(s, cases, days):
             '<div class="err">Lỗi đọc Turso: ' + esc(s["error"]) +
             '<br><small>Kiểm tra TURSO_URL / TURSO_TOKEN trên Render.</small></div>', "—")
 
+    # Ngay "hom nay" = phan ngay cua updated_at (luc day len cloud)
+    today = str(s.get("updated_at", "")).split(" ")[0]
+    if not today and cases:
+        today = str(cases[0].get("date", ""))
+
+    # MODEL tinh theo CASE: hom nay co bao nhieu case can IN (model) vs KHONG
+    today_cases = [c for c in cases if str(c.get("date", "")) == today]
+    m_in = sum(1 for c in today_cases if c.get("model"))
+    m_no = len(today_cases) - m_in
+
     cards = (
         '<section class="summary">'
         '<div class="card v"><span>Ca tháng</span><strong>' + str(s.get("total_cases", 0)) + '</strong></div>'
         '<div class="card b"><span>Đơn vị tháng</span><strong>' + str(s.get("total_units", 0)) + '</strong></div>'
         '<div class="card o hl"><span>Ca hôm nay</span><strong>' + str(s.get("today_cases", 0)) + '</strong></div>'
         '<div class="card o hl"><span>Đơn vị hôm nay</span><strong>' + str(s.get("today_units", 0)) + '</strong></div>'
+        '<div class="card mcard"><span>Model hôm nay (theo case)</span>'
+        '<div class="msplit"><div class="mseg in"><b>' + str(m_in) + '</b><i>cần in</i></div>'
+        '<div class="mseg no"><b>' + str(m_no) + '</b><i>không in</i></div></div></div>'
         '</section>')
 
     chart = ('<section class="panel"><div class="panel-title"><h2>Sản lượng theo ngày</h2></div>'
              + build_chart(days) + '</section>')
-
-    # Ngay "hom nay" = phan ngay cua updated_at (luc day len cloud)
-    today = str(s.get("updated_at", "")).split(" ")[0]
-    if not today and cases:
-        today = str(cases[0].get("date", ""))
-
-    # O MODEL: cac case co MODEL trong hom nay (de biet phai in model nao)
-    today_models = [c for c in cases if c.get("model") and str(c.get("date", "")) == today]
-    if today_models:
-        mrows = ""
-        for c in today_models:
-            mrows += ('<div class="mrow"><span class="pill cli">' + esc(c.get("client", "") or "(khác)") + '</span>'
-                      '<span class="mnm">' + esc(c.get("name", "")) + '</span>'
-                      '<span class="pill u">' + str(c.get("units", 0)) + ' đv</span></div>')
-        modelbox = ('<section class="panel modelbox"><div class="panel-title">'
-                    '<h2>🖨 Case có MODEL hôm nay</h2><span class="mcount">' + str(len(today_models)) + '</span>'
-                    '</div><div class="mlist">' + mrows + '</div></section>')
-    else:
-        modelbox = ('<section class="panel modelbox"><div class="panel-title">'
-                    '<h2>🖨 Case có MODEL hôm nay</h2></div>'
-                    '<div class="empty">Hôm nay chưa có case cần in MODEL.</div></section>')
 
     # Nhung data ca + ngay -> JS tu render (loc Hom nay/Tuan/Thang + tab khach)
     slim = [{"name": c.get("name", ""), "client": c.get("client", "") or "(khác)",
@@ -201,7 +193,7 @@ def render_page(s, cases, days):
         '<div class="case-list" id="list"></div></section>'
         '<script>window.DATA=' + data_js + ';</script>')
 
-    return _shell(cards + modelbox + chart + panel, s.get("updated_at", "—"), s.get("month", ""))
+    return _shell(cards + chart + panel, s.get("updated_at", "—"), s.get("month", ""))
 
 
 def _shell(body, updated, month=""):
@@ -257,14 +249,14 @@ main{padding:18px 14px calc(30px + env(safe-area-inset-bottom));max-width:980px;
 .card.o::after{background:radial-gradient(circle,rgba(249,115,22,.30),transparent 70%)}
 .card.hl{background:linear-gradient(180deg,rgba(60,28,30,.5),rgba(30,18,46,.62))}
 .panel{margin-top:16px;padding:18px}
-.modelbox{border-color:rgba(249,115,22,.42);background:linear-gradient(180deg,rgba(60,32,14,.55),rgba(30,18,46,.62))}
-.modelbox h2{color:#fdba74}
-.mcount{font-size:13px;font-weight:900;color:#fff;background:linear-gradient(135deg,#f97316,#ea580c);
- padding:3px 11px;border-radius:10px;box-shadow:0 6px 16px -8px rgba(249,115,22,.9)}
-.mlist{display:grid;gap:8px;max-height:230px;overflow-y:auto}
-.mrow{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;
- background:rgba(20,11,30,.5);border:1px solid rgba(249,115,22,.22)}
-.mrow .mnm{flex:1;font-size:14px;font-weight:600;color:#f3eeff;word-break:break-word;min-width:0}
+.mcard{border-color:rgba(249,115,22,.34)}
+.mcard span{color:#fdba74}
+.msplit{display:flex;gap:20px;align-items:flex-end}
+.mseg b{font-size:38px;font-weight:900;line-height:1;display:block}
+.mseg.in b{color:#fb923c;text-shadow:0 0 22px rgba(249,115,22,.55)}
+.mseg.no b{color:#9d8fb8}
+.mseg i{font-style:normal;display:block;margin-top:5px;font-size:10px;font-weight:700;
+ letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .panel-title{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
 h2{font-size:16px;color:#efe9fb;font-weight:800;letter-spacing:.01em}
 .chartbox{overflow-x:auto;padding-bottom:4px}
