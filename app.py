@@ -162,30 +162,47 @@ def render_page(s, cases, days):
     chart = ('<section class="panel"><div class="panel-title"><h2>Sản lượng theo ngày</h2></div>'
              + build_chart(days) + '</section>')
 
+    # Chi hien ca TRONG NGAY (ngay day = phan ngay cua updated_at)
+    today = str(s.get("updated_at", "")).split(" ")[0]
+    if not today and cases:
+        today = str(cases[0].get("date", ""))
+    today_cases = [c for c in cases if str(c.get("date", "")) == today]
+
+    # Tab khach hang (loc client-side, khong reload)
+    order = []
+    for c in today_cases:
+        cc = c.get("client", "") or "(khác)"
+        if cc not in order:
+            order.append(cc)
+    tabs = ('<div class="tabs"><button class="tab active" data-t="__all__">Tất cả '
+            '<i>' + str(len(today_cases)) + '</i></button>')
+    for cc in order:
+        cnt = sum(1 for c in today_cases if (c.get("client", "") or "(khác)") == cc)
+        tabs += ('<button class="tab" data-t="' + esc(cc) + '">' + esc(cc) +
+                 ' <i>' + str(cnt) + '</i></button>')
+    tabs += '</div>'
+
     rows = ""
-    for c in cases:
+    for c in today_cases:
         nm = esc(c.get("name", ""))
-        cli = esc(c.get("client", ""))
+        cli = esc(c.get("client", "") or "(khác)")
         units = c.get("units", 0)
-        date = esc(c.get("date", ""))
         model = '<span class="pill model">MODEL</span>' if c.get("model") else ''
-        search = (str(c.get("name", "")) + " " + str(c.get("client", ""))).lower().replace('"', "")
         rows += (
-            '<div class="case-row" data-s="' + esc(search) + '">'
+            '<div class="case-row" data-cli="' + cli + '">'
             '<div class="row-top"><span class="pill cli">' + cli + '</span>'
-            '<span class="date">' + date + '</span></div>'
+            '<span class="pill u">' + str(units) + ' đv</span></div>'
             '<h3>' + nm + '</h3>'
-            '<div class="case-meta"><span class="pill u">' + str(units) + ' đv</span>' + model + '</div>'
+            + ('<div class="case-meta">' + model + '</div>' if model else '') +
             '</div>')
     if not rows:
-        rows = ('<div class="empty">Chưa có danh sách ca. Trên app desktop bấm '
-                '<b>☁ Đẩy lên cloud</b> để hiện ca mới hoàn thành.</div>')
+        rows = '<div class="empty">Hôm nay chưa có ca nào hoàn thành.</div>'
 
     panel = (
         '<section class="panel">'
-        '<div class="panel-title"><h2>Ca mới hoàn thành</h2>'
-        '<input id="q" type="search" placeholder="Tìm mã ca, khách…"></div>'
-        '<div id="list" class="case-list">' + rows + '</div></section>')
+        '<div class="panel-title"><h2>Ca trong ngày</h2>'
+        '<span class="daydate">' + esc(today) + '</span></div>'
+        + tabs + '<div class="case-list">' + rows + '</div></section>')
 
     return _shell(cards + chart + panel, s.get("updated_at", "—"), s.get("month", ""))
 
@@ -193,7 +210,6 @@ def render_page(s, cases, days):
 def _shell(body, updated, month=""):
     return """<!doctype html><html lang="vi"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="refresh" content="120">
 <meta name="theme-color" content="#140c1f">
 <title>PainLAB · Sản lượng</title>
 <style>
@@ -253,10 +269,19 @@ h2{font-size:16px;color:#efe9fb;font-weight:800;letter-spacing:.01em}
 @keyframes grow{to{transform:scaleY(1)}}
 .cv{fill:#c4b5fd;font-size:11px;font-weight:800}
 .cd{fill:#8b7caa;font-size:10px}
-input[type=search]{width:100%;max-width:280px;padding:11px 14px;color:#ece6f7;background:rgba(15,8,26,.7);
- border:1px solid var(--border);border-radius:14px;font-size:15px}
-input[type=search]::placeholder{color:#7c6f97}
-input[type=search]:focus{outline:none;border-color:rgba(139,92,246,.7);box-shadow:0 0 0 3px rgba(139,92,246,.18)}
+.daydate{color:var(--vio);font-size:13px;font-weight:700;background:rgba(139,92,246,.14);
+ padding:5px 12px;border-radius:10px;border:1px solid var(--border)}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:4px;scrollbar-width:thin}
+.tabs::-webkit-scrollbar{height:5px}.tabs::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.tab{flex:0 0 auto;cursor:pointer;padding:9px 15px;border-radius:13px;font-size:14px;font-weight:700;
+ color:#cdbdf0;background:rgba(30,18,46,.7);border:1px solid var(--border);white-space:nowrap;
+ display:flex;align-items:center;gap:7px;transition:.14s;font-family:inherit}
+.tab i{font-style:normal;font-size:11px;font-weight:800;padding:1px 7px;border-radius:8px;
+ background:rgba(139,92,246,.2);color:#ddd0ff}
+.tab:hover{border-color:rgba(139,92,246,.5)}
+.tab.active{color:#fff;background:linear-gradient(135deg,#7c3aed,#9333ea);border-color:transparent;
+ box-shadow:0 6px 18px -8px rgba(139,92,246,.9)}
+.tab.active i{background:rgba(255,255,255,.25);color:#fff}
 .case-list{display:grid;gap:11px}
 .case-row{padding:15px 16px;transition:transform .14s,border-color .14s,background .14s}
 .case-row:hover{border-color:rgba(139,92,246,.55);background:rgba(45,28,66,.72);transform:translateY(-2px)}
@@ -278,10 +303,14 @@ input[type=search]:focus{outline:none;border-color:rgba(139,92,246,.7);box-shado
 <span id="status">⟳ """ + esc(updated) + ("" if not month else " · " + esc(month)) + """</span></header>
 <main>""" + body + """</main>
 <script>
-const q=document.getElementById('q');
-if(q){q.addEventListener('input',()=>{const v=q.value.toLowerCase().trim();
- document.querySelectorAll('.case-row').forEach(r=>{
-   r.style.display=(!v||r.dataset.s.includes(v))?'':'none';});});}
+// Tab khach hang: loc ca trong ngay client-side, KHONG reload web
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  const f=t.dataset.t;
+  document.querySelectorAll('.case-row').forEach(r=>{
+    r.style.display=(f==='__all__'||r.dataset.cli===f)?'':'none';});
+}));
 </script>
 </body></html>"""
 
