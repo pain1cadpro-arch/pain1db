@@ -152,58 +152,24 @@ def render_page(s, cases, days):
             '<div class="err">Lỗi đọc Turso: ' + esc(s["error"]) +
             '<br><small>Kiểm tra TURSO_URL / TURSO_TOKEN trên Render.</small></div>', "—")
 
-    # Ngay "hom nay" + thu 2 dau tuan (date arithmetic, khong timezone)
+    # Ngay "hom nay" (luc day len cloud) — phan con lai JS lo
     today = str(s.get("updated_at", "")).split(" ")[0]
     if not today and cases:
         today = str(cases[0].get("date", ""))
-    try:
-        td = datetime.strptime(today, "%Y-%m-%d").date()
-        monday = (td - timedelta(days=td.weekday())).isoformat()
-    except ValueError:
-        monday = today
 
-    def split(case_list):
-        """(model_count, non_model_count) — tinh theo CASE."""
-        mi = sum(1 for c in case_list if c.get("model"))
-        return mi, len(case_list) - mi
-
-    month_cases = cases
-    week_cases = [c for c in cases if monday <= str(c.get("date", "")) <= today]
-    today_cases = [c for c in cases if str(c.get("date", "")) == today]
-    mo_i, mo_n = split(month_cases)
-    wk_i, wk_n = split(week_cases)
-    td_i, td_n = split(today_cases)
-    wk_units = sum(c.get("units", 0) for c in week_cases)
-
-    def ccard(label, mi, no):
-        return ('<div class="card"><span>' + label + '</span>'
-                '<div class="csplit"><b class="y">' + str(mi) + '</b>'
-                '<span class="sep">/</span><b class="p">' + str(no) + '</b></div></div>')
-    def ucard(label, val, cls="b"):
-        return ('<div class="card ' + cls + '"><span>' + label + '</span><strong>' + str(val) + '</strong></div>')
-
-    cards = (
-        '<section class="summary">'
-        + ccard("Ca tháng", mo_i, mo_n)
-        + ccard("Ca tuần này", wk_i, wk_n)
-        + ccard("Ca hôm nay", td_i, td_n)
-        + ucard("Đơn vị tháng", s.get("total_units", 0))
-        + ucard("Đơn vị tuần", wk_units)
-        + ucard("Đơn vị hôm nay", s.get("today_units", 0), "o")
-        + '</section>'
-        '<div class="legend"><span><i class="d y"></i>có model</span>'
-        '<span><i class="d p"></i>không model</span></div>')
-
-    chart = ('<section class="panel"><div class="panel-title"><h2>Sản lượng theo ngày</h2></div>'
-             + build_chart(days) + '</section>')
-
-    # Nhung data ca + ngay -> JS tu render (loc Hom nay/Tuan/Thang + tab khach)
     slim = [{"name": c.get("name", ""), "client": c.get("client", "") or "(khác)",
              "units": c.get("units", 0), "model": 1 if c.get("model") else 0,
              "date": c.get("date", "")} for c in cases]
     data_js = json.dumps({"today": today, "cases": slim}, ensure_ascii=False).replace("<", "\\u003c")
 
-    panel = (
+    body = (
+        '<div class="seclbl">Khách hàng <span>· bấm để xem tổng quan từng khách</span></div>'
+        '<div class="tabs" id="clitabs"></div>'
+        '<section class="summary" id="summary"></section>'
+        '<div class="legend"><span><i class="d y"></i>có model</span>'
+        '<span><i class="d p"></i>không model</span></div>'
+        '<section class="panel"><div class="panel-title"><h2>Sản lượng theo ngày</h2></div>'
+        '<div class="chartbox" id="chart"></div></section>'
         '<section class="panel">'
         '<div class="panel-title"><h2>Danh sách ca</h2>'
         '<div class="periods">'
@@ -211,11 +177,10 @@ def render_page(s, cases, days):
         '<button class="per" data-p="week">Tuần này</button>'
         '<button class="per" data-p="month">Tháng này</button>'
         '</div></div>'
-        '<div class="tabs" id="tabs"></div>'
         '<div class="case-list" id="list"></div></section>'
         '<script>window.DATA=' + data_js + ';</script>')
 
-    return _shell(cards + chart + panel, s.get("updated_at", "—"), s.get("month", ""))
+    return _shell(body, s.get("updated_at", "—"), s.get("month", ""))
 
 
 def _shell(body, updated, month=""):
@@ -271,11 +236,15 @@ main{padding:18px 14px calc(30px + env(safe-area-inset-bottom));max-width:980px;
 .card.o::after{background:radial-gradient(circle,rgba(249,115,22,.30),transparent 70%)}
 .card.hl{background:linear-gradient(180deg,rgba(60,28,30,.5),rgba(30,18,46,.62))}
 .panel{margin-top:16px;padding:18px}
-.csplit{display:flex;align-items:baseline;gap:9px}
-.csplit b{font-size:38px;font-weight:900;line-height:1}
-.csplit b.y{color:#fbbf24;text-shadow:0 0 22px rgba(251,191,36,.55)}
-.csplit b.p{color:#c4b5fd;text-shadow:0 0 22px rgba(139,92,246,.55)}
-.csplit .sep{font-size:24px;font-weight:400;color:var(--muted);opacity:.5}
+.cval{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
+.cval .tot{font-size:38px;font-weight:900;line-height:1;color:#f3eeff;text-shadow:0 0 20px rgba(196,181,253,.4)}
+.cval .mini{display:flex;align-items:baseline;gap:5px;font-size:19px;font-weight:800}
+.cval .mini .y{color:#fbbf24;text-shadow:0 0 14px rgba(251,191,36,.5)}
+.cval .mini .p{color:#c4b5fd;text-shadow:0 0 14px rgba(139,92,246,.5)}
+.cval .mini span{color:var(--muted);opacity:.55;font-weight:400}
+.seclbl{font-size:12px;font-weight:800;color:#cdbdf0;text-transform:uppercase;letter-spacing:.08em;
+ margin:2px 4px 11px}
+.seclbl span{color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
 .legend{display:flex;gap:16px;margin:12px 4px 0;font-size:12px;color:var(--muted);font-weight:600}
 .legend span{display:flex;align-items:center;gap:6px}
 .legend .d{width:11px;height:11px;border-radius:50%}
@@ -330,45 +299,69 @@ h2{font-size:16px;color:#efe9fb;font-weight:800;letter-spacing:.01em}
 <span id="status">⟳ """ + esc(updated) + ("" if not month else " · " + esc(month)) + """</span></header>
 <main>""" + body + """</main>
 <script>
-// Loc Hom nay / Tuan / Thang + tab khach — tat ca client-side, KHONG reload
+// Toan bo dashboard render client-side: bam khach -> loc card+bieu do+list theo khach. KHONG reload.
 (function(){
   const D=window.DATA||{today:"",cases:[]};
   const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  // m. Thu 2 dau tuan chua "today"
   let monday="";
   if(D.today){const d=new Date(D.today+"T00:00:00Z");const wd=(d.getUTCDay()+6)%7;
     d.setUTCDate(d.getUTCDate()-wd);monday=d.toISOString().slice(0,10);}
   const state={period:'today',client:'__all__'};
-  function inPeriod(date){
-    if(state.period==='month')return true;
-    if(state.period==='today')return date===D.today;
-    return monday?date>=monday&&date<=D.today:date===D.today; // week
+  const inWeek=date=>monday?(date>=monday&&date<=D.today):date===D.today;
+  const inPeriod=date=>state.period==='month'?true:state.period==='today'?date===D.today:inWeek(date);
+  const clientCases=()=>state.client==='__all__'?D.cases:D.cases.filter(c=>c.client===state.client);
+
+  function caseCard(label,list){
+    const tot=list.length, mi=list.filter(c=>c.model).length, no=tot-mi;
+    return '<div class="card"><span>'+label+'</span><div class="cval"><b class="tot">'+tot+'</b>'+
+      '<div class="mini"><b class="y">'+mi+'</b><span>/</span><b class="p">'+no+'</b></div></div></div>';
+  }
+  function unitCard(label,list,cls){
+    const u=list.reduce((a,c)=>a+(c.units||0),0);
+    return '<div class="card '+(cls||'b')+'"><span>'+label+'</span><strong>'+u+'</strong></div>';
+  }
+  function chartSVG(list){
+    const map={};list.forEach(c=>{map[c.date]=(map[c.date]||0)+(c.units||0);});
+    const ds=Object.keys(map).sort();
+    if(!ds.length)return '<div class="empty">Chưa có dữ liệu.</div>';
+    const mx=Math.max.apply(null,ds.map(d=>map[d]).concat(1));
+    const bw=26,gap=12,ch=150,top=24,bot=24,W=gap+ds.length*(bw+gap),H=top+ch+bot;
+    let b='';
+    ds.forEach((d,i)=>{const u=map[d],h=Math.max(3,Math.round(u/mx*ch)),x=gap+i*(bw+gap),y=top+(ch-h);
+      b+='<rect class="bar" x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="6" fill="url(#g)" style="--i:'+i+'"/>';
+      b+='<text class="cv" x="'+(x+bw/2)+'" y="'+(y-7)+'" text-anchor="middle">'+u+'</text>';
+      b+='<text class="cd" x="'+(x+bw/2)+'" y="'+(H-7)+'" text-anchor="middle">'+d.slice(-2)+'</text>';});
+    return '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'"><defs>'+
+      '<linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8b4fe"/>'+
+      '<stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>'+b+'</svg>';
   }
   function render(){
-    const inP=D.cases.filter(c=>inPeriod(c.date));
-    // tab khach tu danh sach trong moc dang chon
-    const counts={};inP.forEach(c=>{counts[c.client]=(counts[c.client]||0)+1;});
-    const clis=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
-    if(!(state.client in counts)&&state.client!=='__all__')state.client='__all__';
-    let th='<button class="tab'+(state.client==='__all__'?' active':'')+'" data-t="__all__">Tất cả <i>'+inP.length+'</i></button>';
-    clis.forEach(cc=>{th+='<button class="tab'+(state.client===cc?' active':'')+'" data-t="'+esc(cc)+'">'+esc(cc)+' <i>'+counts[cc]+'</i></button>';});
-    document.getElementById('tabs').innerHTML=th;
-    // danh sach
-    const show=inP.filter(c=>state.client==='__all__'||c.client===state.client);
+    const cc=clientCases();
+    const month=cc, week=cc.filter(c=>inWeek(c.date)), today=cc.filter(c=>c.date===D.today);
+    document.getElementById('summary').innerHTML=
+      caseCard('Ca tháng',month)+caseCard('Ca tuần này',week)+caseCard('Ca hôm nay',today)+
+      unitCard('Đơn vị tháng',month)+unitCard('Đơn vị tuần',week)+unitCard('Đơn vị hôm nay',today,'o');
+    document.getElementById('chart').innerHTML=chartSVG(cc);
+    // tab khach (dem theo ca thang)
+    const cnt={};D.cases.forEach(c=>{cnt[c.client]=(cnt[c.client]||0)+1;});
+    const clis=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]);
+    let th='<button class="tab'+(state.client==='__all__'?' active':'')+'" data-t="__all__">Tất cả <i>'+D.cases.length+'</i></button>';
+    clis.forEach(k=>{th+='<button class="tab'+(state.client===k?' active':'')+'" data-t="'+esc(k)+'">'+esc(k)+' <i>'+cnt[k]+'</i></button>';});
+    document.getElementById('clitabs').innerHTML=th;
+    // list (khach + moc)
+    const lst=cc.filter(c=>inPeriod(c.date));
     let h='';
-    show.forEach(c=>{
-      const model=c.model?'<div class="case-meta"><span class="pill model">MODEL</span></div>':'';
+    lst.forEach(c=>{const model=c.model?'<div class="case-meta"><span class="pill model">MODEL</span></div>':'';
       h+='<div class="case-row"><div class="row-top"><span class="pill cli">'+esc(c.client)+
         '</span><span class="pill u">'+c.units+' đv · '+c.date.slice(5)+'</span></div>'+
-        '<h3>'+esc(c.name)+'</h3>'+model+'</div>';
-    });
-    document.getElementById('list').innerHTML=h||'<div class="empty">Không có ca nào trong mốc này.</div>';
+        '<h3>'+esc(c.name)+'</h3>'+model+'</div>';});
+    document.getElementById('list').innerHTML=h||'<div class="empty">Không có ca nào.</div>';
   }
+  document.getElementById('clitabs').addEventListener('click',e=>{
+    const b=e.target.closest('.tab');if(!b)return;state.client=b.dataset.t;render();});
   document.querySelectorAll('.per').forEach(b=>b.addEventListener('click',()=>{
     document.querySelectorAll('.per').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');state.period=b.dataset.p;state.client='__all__';render();}));
-  document.getElementById('tabs').addEventListener('click',e=>{
-    const b=e.target.closest('.tab');if(!b)return;state.client=b.dataset.t;render();});
+    b.classList.add('active');state.period=b.dataset.p;render();}));
   render();
 })();
 </script>
