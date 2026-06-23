@@ -9,6 +9,7 @@ Bien moi truong (Render → Environment):
   API_KEY      = <chuoi bi mat tuy chon> — neu dat, /api/summary can ?key=API_KEY
 """
 import os, json, urllib.request, urllib.error
+from datetime import datetime, timedelta
 from flask import Flask, jsonify, request, Response
 
 app = Flask(__name__)
@@ -151,26 +152,47 @@ def render_page(s, cases, days):
             '<div class="err">Lỗi đọc Turso: ' + esc(s["error"]) +
             '<br><small>Kiểm tra TURSO_URL / TURSO_TOKEN trên Render.</small></div>', "—")
 
-    # Ngay "hom nay" = phan ngay cua updated_at (luc day len cloud)
+    # Ngay "hom nay" + thu 2 dau tuan (date arithmetic, khong timezone)
     today = str(s.get("updated_at", "")).split(" ")[0]
     if not today and cases:
         today = str(cases[0].get("date", ""))
+    try:
+        td = datetime.strptime(today, "%Y-%m-%d").date()
+        monday = (td - timedelta(days=td.weekday())).isoformat()
+    except ValueError:
+        monday = today
 
-    # MODEL tinh theo CASE: hom nay co bao nhieu case can IN (model) vs KHONG
+    def split(case_list):
+        """(model_count, non_model_count) — tinh theo CASE."""
+        mi = sum(1 for c in case_list if c.get("model"))
+        return mi, len(case_list) - mi
+
+    month_cases = cases
+    week_cases = [c for c in cases if monday <= str(c.get("date", "")) <= today]
     today_cases = [c for c in cases if str(c.get("date", "")) == today]
-    m_in = sum(1 for c in today_cases if c.get("model"))
-    m_no = len(today_cases) - m_in
+    mo_i, mo_n = split(month_cases)
+    wk_i, wk_n = split(week_cases)
+    td_i, td_n = split(today_cases)
+    wk_units = sum(c.get("units", 0) for c in week_cases)
+
+    def ccard(label, mi, no):
+        return ('<div class="card"><span>' + label + '</span>'
+                '<div class="csplit"><b class="y">' + str(mi) + '</b>'
+                '<span class="sep">/</span><b class="p">' + str(no) + '</b></div></div>')
+    def ucard(label, val, cls="b"):
+        return ('<div class="card ' + cls + '"><span>' + label + '</span><strong>' + str(val) + '</strong></div>')
 
     cards = (
         '<section class="summary">'
-        '<div class="card v"><span>Ca tháng</span><strong>' + str(s.get("total_cases", 0)) + '</strong></div>'
-        '<div class="card b"><span>Đơn vị tháng</span><strong>' + str(s.get("total_units", 0)) + '</strong></div>'
-        '<div class="card o hl"><span>Ca hôm nay</span><strong>' + str(s.get("today_cases", 0)) + '</strong></div>'
-        '<div class="card o hl"><span>Đơn vị hôm nay</span><strong>' + str(s.get("today_units", 0)) + '</strong></div>'
-        '<div class="card mcard"><span>Model hôm nay (theo case)</span>'
-        '<div class="msplit"><div class="mseg in"><b>' + str(m_in) + '</b><i>cần in</i></div>'
-        '<div class="mseg no"><b>' + str(m_no) + '</b><i>không in</i></div></div></div>'
-        '</section>')
+        + ccard("Ca tháng", mo_i, mo_n)
+        + ccard("Ca tuần này", wk_i, wk_n)
+        + ccard("Ca hôm nay", td_i, td_n)
+        + ucard("Đơn vị tháng", s.get("total_units", 0))
+        + ucard("Đơn vị tuần", wk_units)
+        + ucard("Đơn vị hôm nay", s.get("today_units", 0), "o")
+        + '</section>'
+        '<div class="legend"><span><i class="d y"></i>có model</span>'
+        '<span><i class="d p"></i>không model</span></div>')
 
     chart = ('<section class="panel"><div class="panel-title"><h2>Sản lượng theo ngày</h2></div>'
              + build_chart(days) + '</section>')
@@ -249,14 +271,16 @@ main{padding:18px 14px calc(30px + env(safe-area-inset-bottom));max-width:980px;
 .card.o::after{background:radial-gradient(circle,rgba(249,115,22,.30),transparent 70%)}
 .card.hl{background:linear-gradient(180deg,rgba(60,28,30,.5),rgba(30,18,46,.62))}
 .panel{margin-top:16px;padding:18px}
-.mcard{border-color:rgba(249,115,22,.34)}
-.mcard span{color:#fdba74}
-.msplit{display:flex;gap:20px;align-items:flex-end}
-.mseg b{font-size:38px;font-weight:900;line-height:1;display:block}
-.mseg.in b{color:#fb923c;text-shadow:0 0 22px rgba(249,115,22,.55)}
-.mseg.no b{color:#9d8fb8}
-.mseg i{font-style:normal;display:block;margin-top:5px;font-size:10px;font-weight:700;
- letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.csplit{display:flex;align-items:baseline;gap:9px}
+.csplit b{font-size:38px;font-weight:900;line-height:1}
+.csplit b.y{color:#fbbf24;text-shadow:0 0 22px rgba(251,191,36,.55)}
+.csplit b.p{color:#c4b5fd;text-shadow:0 0 22px rgba(139,92,246,.55)}
+.csplit .sep{font-size:24px;font-weight:400;color:var(--muted);opacity:.5}
+.legend{display:flex;gap:16px;margin:12px 4px 0;font-size:12px;color:var(--muted);font-weight:600}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend .d{width:11px;height:11px;border-radius:50%}
+.legend .d.y{background:#fbbf24;box-shadow:0 0 8px rgba(251,191,36,.7)}
+.legend .d.p{background:#c4b5fd;box-shadow:0 0 8px rgba(139,92,246,.7)}
 .panel-title{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
 h2{font-size:16px;color:#efe9fb;font-weight:800;letter-spacing:.01em}
 .chartbox{overflow-x:auto;padding-bottom:4px}
@@ -298,7 +322,7 @@ h2{font-size:16px;color:#efe9fb;font-weight:800;letter-spacing:.01em}
 .pill.model{color:#fed7aa;background:rgba(249,115,22,.18);border:1px solid rgba(249,115,22,.42)}
 .empty{color:var(--muted);padding:18px 4px;font-size:14px;line-height:1.6}
 .err{margin:18px;padding:18px;color:#fda4af;background:rgba(80,20,40,.4);border:1px solid rgba(244,63,94,.4);border-radius:18px}
-@media(min-width:700px){.summary{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:700px){.summary{grid-template-columns:repeat(3,1fr)}}
 </style></head><body>
 <div class="mesh"></div><div class="grid"></div>
 <header><div class="brand"><span class="logo"><b>🦷</b></span>
