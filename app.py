@@ -162,47 +162,28 @@ def render_page(s, cases, days):
     chart = ('<section class="panel"><div class="panel-title"><h2>Sản lượng theo ngày</h2></div>'
              + build_chart(days) + '</section>')
 
-    # Chi hien ca TRONG NGAY (ngay day = phan ngay cua updated_at)
+    # Ngay "hom nay" = phan ngay cua updated_at (luc day len cloud)
     today = str(s.get("updated_at", "")).split(" ")[0]
     if not today and cases:
         today = str(cases[0].get("date", ""))
-    today_cases = [c for c in cases if str(c.get("date", "")) == today]
 
-    # Tab khach hang (loc client-side, khong reload)
-    order = []
-    for c in today_cases:
-        cc = c.get("client", "") or "(khác)"
-        if cc not in order:
-            order.append(cc)
-    tabs = ('<div class="tabs"><button class="tab active" data-t="__all__">Tất cả '
-            '<i>' + str(len(today_cases)) + '</i></button>')
-    for cc in order:
-        cnt = sum(1 for c in today_cases if (c.get("client", "") or "(khác)") == cc)
-        tabs += ('<button class="tab" data-t="' + esc(cc) + '">' + esc(cc) +
-                 ' <i>' + str(cnt) + '</i></button>')
-    tabs += '</div>'
-
-    rows = ""
-    for c in today_cases:
-        nm = esc(c.get("name", ""))
-        cli = esc(c.get("client", "") or "(khác)")
-        units = c.get("units", 0)
-        model = '<span class="pill model">MODEL</span>' if c.get("model") else ''
-        rows += (
-            '<div class="case-row" data-cli="' + cli + '">'
-            '<div class="row-top"><span class="pill cli">' + cli + '</span>'
-            '<span class="pill u">' + str(units) + ' đv</span></div>'
-            '<h3>' + nm + '</h3>'
-            + ('<div class="case-meta">' + model + '</div>' if model else '') +
-            '</div>')
-    if not rows:
-        rows = '<div class="empty">Hôm nay chưa có ca nào hoàn thành.</div>'
+    # Nhung data ca + ngay -> JS tu render (loc Hom nay/Tuan/Thang + tab khach)
+    slim = [{"name": c.get("name", ""), "client": c.get("client", "") or "(khác)",
+             "units": c.get("units", 0), "model": 1 if c.get("model") else 0,
+             "date": c.get("date", "")} for c in cases]
+    data_js = json.dumps({"today": today, "cases": slim}, ensure_ascii=False).replace("<", "\\u003c")
 
     panel = (
         '<section class="panel">'
-        '<div class="panel-title"><h2>Ca trong ngày</h2>'
-        '<span class="daydate">' + esc(today) + '</span></div>'
-        + tabs + '<div class="case-list">' + rows + '</div></section>')
+        '<div class="panel-title"><h2>Danh sách ca</h2>'
+        '<div class="periods">'
+        '<button class="per active" data-p="today">Hôm nay</button>'
+        '<button class="per" data-p="week">Tuần này</button>'
+        '<button class="per" data-p="month">Tháng này</button>'
+        '</div></div>'
+        '<div class="tabs" id="tabs"></div>'
+        '<div class="case-list" id="list"></div></section>'
+        '<script>window.DATA=' + data_js + ';</script>')
 
     return _shell(cards + chart + panel, s.get("updated_at", "—"), s.get("month", ""))
 
@@ -271,6 +252,12 @@ h2{font-size:16px;color:#efe9fb;font-weight:800;letter-spacing:.01em}
 .cd{fill:#8b7caa;font-size:10px}
 .daydate{color:var(--vio);font-size:13px;font-weight:700;background:rgba(139,92,246,.14);
  padding:5px 12px;border-radius:10px;border:1px solid var(--border)}
+.periods{display:flex;gap:6px;background:rgba(15,8,26,.6);border:1px solid var(--border);
+ border-radius:13px;padding:4px}
+.per{cursor:pointer;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:700;font-family:inherit;
+ color:#cdbdf0;background:transparent;border:none;white-space:nowrap;transition:.14s}
+.per.active{color:#fff;background:linear-gradient(135deg,#7c3aed,#9333ea);
+ box-shadow:0 6px 16px -8px rgba(139,92,246,.9)}
 .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:4px;scrollbar-width:thin}
 .tabs::-webkit-scrollbar{height:5px}.tabs::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .tab{flex:0 0 auto;cursor:pointer;padding:9px 15px;border-radius:13px;font-size:14px;font-weight:700;
@@ -303,14 +290,47 @@ h2{font-size:16px;color:#efe9fb;font-weight:800;letter-spacing:.01em}
 <span id="status">⟳ """ + esc(updated) + ("" if not month else " · " + esc(month)) + """</span></header>
 <main>""" + body + """</main>
 <script>
-// Tab khach hang: loc ca trong ngay client-side, KHONG reload web
-document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  t.classList.add('active');
-  const f=t.dataset.t;
-  document.querySelectorAll('.case-row').forEach(r=>{
-    r.style.display=(f==='__all__'||r.dataset.cli===f)?'':'none';});
-}));
+// Loc Hom nay / Tuan / Thang + tab khach — tat ca client-side, KHONG reload
+(function(){
+  const D=window.DATA||{today:"",cases:[]};
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  // m. Thu 2 dau tuan chua "today"
+  let monday="";
+  if(D.today){const d=new Date(D.today+"T00:00:00Z");const wd=(d.getUTCDay()+6)%7;
+    d.setUTCDate(d.getUTCDate()-wd);monday=d.toISOString().slice(0,10);}
+  const state={period:'today',client:'__all__'};
+  function inPeriod(date){
+    if(state.period==='month')return true;
+    if(state.period==='today')return date===D.today;
+    return monday?date>=monday&&date<=D.today:date===D.today; // week
+  }
+  function render(){
+    const inP=D.cases.filter(c=>inPeriod(c.date));
+    // tab khach tu danh sach trong moc dang chon
+    const counts={};inP.forEach(c=>{counts[c.client]=(counts[c.client]||0)+1;});
+    const clis=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+    if(!(state.client in counts)&&state.client!=='__all__')state.client='__all__';
+    let th='<button class="tab'+(state.client==='__all__'?' active':'')+'" data-t="__all__">Tất cả <i>'+inP.length+'</i></button>';
+    clis.forEach(cc=>{th+='<button class="tab'+(state.client===cc?' active':'')+'" data-t="'+esc(cc)+'">'+esc(cc)+' <i>'+counts[cc]+'</i></button>';});
+    document.getElementById('tabs').innerHTML=th;
+    // danh sach
+    const show=inP.filter(c=>state.client==='__all__'||c.client===state.client);
+    let h='';
+    show.forEach(c=>{
+      const model=c.model?'<div class="case-meta"><span class="pill model">MODEL</span></div>':'';
+      h+='<div class="case-row"><div class="row-top"><span class="pill cli">'+esc(c.client)+
+        '</span><span class="pill u">'+c.units+' đv · '+c.date.slice(5)+'</span></div>'+
+        '<h3>'+esc(c.name)+'</h3>'+model+'</div>';
+    });
+    document.getElementById('list').innerHTML=h||'<div class="empty">Không có ca nào trong mốc này.</div>';
+  }
+  document.querySelectorAll('.per').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.per').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');state.period=b.dataset.p;state.client='__all__';render();}));
+  document.getElementById('tabs').addEventListener('click',e=>{
+    const b=e.target.closest('.tab');if(!b)return;state.client=b.dataset.t;render();});
+  render();
+})();
 </script>
 </body></html>"""
 
