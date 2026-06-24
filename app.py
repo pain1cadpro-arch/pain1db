@@ -8,9 +8,20 @@ Bien moi truong (Render → Environment):
   TURSO_TOKEN  = <auth token quyen DOC>
   API_KEY      = <chuoi bi mat tuy chon> — neu dat, /api/summary can ?key=API_KEY
 """
-import os, json, urllib.request, urllib.error
+import os, json, base64, urllib.request, urllib.error
 from datetime import datetime, timedelta
 from flask import Flask, jsonify, request, Response
+
+
+def _logo_uri(name):
+    try:
+        p = os.path.join(os.path.dirname(__file__), name)
+        return "data:image/png;base64," + base64.b64encode(open(p, "rb").read()).decode()
+    except Exception:
+        return ""
+
+LOGO_MARK = _logo_uri("logo_mark.png")
+LOGO_FULL = _logo_uri("logo_full.png")
 
 app = Flask(__name__)
 
@@ -187,7 +198,8 @@ def _shell(body, updated, month=""):
     return """<!doctype html><html lang="vi"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#140c1f">
-<title>PainLAB · Sản lượng</title>
+<title>PAIN1.CAD · Sản lượng</title>
+<link rel="icon" href=\"""" + LOGO_MARK + """\">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800;900&display=swap" rel="stylesheet">
@@ -214,6 +226,10 @@ body::after{width:420px;height:420px;bottom:-160px;left:-120px;
  background-image:linear-gradient(rgba(196,181,253,.6) 1px,transparent 1px),
   linear-gradient(90deg,rgba(196,181,253,.6) 1px,transparent 1px);
  background-size:34px 34px;mask-image:radial-gradient(circle at 50% 0%,#000,transparent 70%)}
+.logowm{position:fixed;inset:0;z-index:-1;pointer-events:none;background-repeat:no-repeat;
+ background-position:center 24%;background-size:min(560px,80%);opacity:.06;filter:blur(1.5px)}
+.logomark{width:42px;height:42px;object-fit:contain;flex:0 0 auto;
+ filter:drop-shadow(0 5px 14px rgba(139,92,246,.55))}
 h1,h2,h3,p{margin:0}
 header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;
  gap:14px;padding:max(18px,env(safe-area-inset-top)) 18px 16px;background:rgba(18,10,30,.72);
@@ -314,8 +330,9 @@ h2{font-size:16px;color:#efe9fb;font-weight:800;letter-spacing:.01em}
 @media(min-width:700px){.summary{grid-template-columns:repeat(3,1fr)}}
 </style></head><body>
 <div class="mesh"></div><div class="grid"></div>
-<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2c-3-2.1-6.6-.9-7.6 2.2C3.2 9.6 5 13.4 6 17.4c.5 2 .8 2.9 1.7 2.9 1.2 0 1-2 1.8-4 .3-.8.6-1.1 1.5-1.1s1.2.3 1.5 1.1c.8 2 .6 4 1.8 4 .9 0 1.2-.9 1.7-2.9 1-4 2.8-7.8 1.6-11C18.6 3.3 15 2.1 12 4.2Z"/></svg></span>
-<div><p class="eyebrow">PainLAB</p><h1>Tổng quan sản lượng</h1></div></div>
+<div class="logowm" style="background-image:url(""" + LOGO_FULL + """)"></div>
+<header><div class="brand"><img class="logomark" src=\"""" + LOGO_MARK + """\" alt="PAIN1.CAD">
+<div><p class="eyebrow">PAIN1·CAD</p><h1>Tổng quan sản lượng</h1></div></div>
 <span id="status">⟳ """ + esc(updated) + ("" if not month else " · " + esc(month)) + """</span></header>
 <main>""" + body + """</main>
 <script>
