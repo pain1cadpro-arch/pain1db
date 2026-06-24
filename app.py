@@ -190,10 +190,10 @@ def _shell(body, updated, month=""):
 <title>PainLAB · Sản lượng</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{font-family:'Plus Jakarta Sans','Segoe UI',-apple-system,system-ui,sans-serif;
- --num:'Space Grotesk','Plus Jakarta Sans',sans-serif;
+:root{font-family:'Be Vietnam Pro','Segoe UI',-apple-system,system-ui,sans-serif;
+ --num:'Space Grotesk','Be Vietnam Pro',sans-serif;
  --vio:#c4b5fd;--muted:#9d8fb8;--border:rgba(139,92,246,.22);--card:rgba(30,18,46,.62)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 *{box-sizing:border-box;margin:0}
