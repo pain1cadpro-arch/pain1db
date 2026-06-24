@@ -226,10 +226,11 @@ body::after{width:420px;height:420px;bottom:-160px;left:-120px;
  background-image:linear-gradient(rgba(196,181,253,.6) 1px,transparent 1px),
   linear-gradient(90deg,rgba(196,181,253,.6) 1px,transparent 1px);
  background-size:34px 34px;mask-image:radial-gradient(circle at 50% 0%,#000,transparent 70%)}
-.logowm{position:fixed;inset:0;z-index:-1;pointer-events:none;background-repeat:no-repeat;
- background-position:center 24%;background-size:min(560px,80%);opacity:.06;filter:blur(1.5px)}
-.logomark{width:42px;height:42px;object-fit:contain;flex:0 0 auto;
- filter:drop-shadow(0 5px 14px rgba(139,92,246,.55))}
+.logowm{position:fixed;inset:0;z-index:-1;pointer-events:none;display:grid;place-items:center}
+.logowm img{width:min(640px,84%);opacity:.14;
+ filter:drop-shadow(0 0 60px rgba(139,92,246,.65)) drop-shadow(0 24px 50px rgba(0,0,0,.55))}
+.logofull{height:54px;width:auto;object-fit:contain;flex:0 0 auto;
+ filter:drop-shadow(0 6px 18px rgba(139,92,246,.5))}
 h1,h2,h3,p{margin:0}
 header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;
  gap:14px;padding:max(18px,env(safe-area-inset-top)) 18px 16px;background:rgba(18,10,30,.72);
@@ -330,9 +331,9 @@ h2{font-size:16px;color:#efe9fb;font-weight:800;letter-spacing:.01em}
 @media(min-width:700px){.summary{grid-template-columns:repeat(3,1fr)}}
 </style></head><body>
 <div class="mesh"></div><div class="grid"></div>
-<div class="logowm" style="background-image:url(""" + LOGO_FULL + """)"></div>
-<header><div class="brand"><img class="logomark" src=\"""" + LOGO_MARK + """\" alt="PAIN1.CAD">
-<div><p class="eyebrow">PAIN1·CAD</p><h1>Tổng quan sản lượng</h1></div></div>
+<div class="logowm"><img src=\"""" + LOGO_FULL + """\" alt=""></div>
+<header><div class="brand"><img class="logofull" src=\"""" + LOGO_FULL + """\" alt="PAIN1.CAD">
+<h1>Tổng quan sản lượng</h1></div>
 <span id="status">⟳ """ + esc(updated) + ("" if not month else " · " + esc(month)) + """</span></header>
 <main>""" + body + """</main>
 <script>
