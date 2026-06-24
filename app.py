@@ -227,8 +227,9 @@ body::after{width:420px;height:420px;bottom:-160px;left:-120px;
   linear-gradient(90deg,rgba(196,181,253,.6) 1px,transparent 1px);
  background-size:34px 34px;mask-image:radial-gradient(circle at 50% 0%,#000,transparent 70%)}
 .logowm{position:fixed;inset:0;z-index:-1;pointer-events:none;display:grid;place-items:center}
-.logowm img{width:min(640px,84%);opacity:.14;
- filter:drop-shadow(0 0 60px rgba(139,92,246,.65)) drop-shadow(0 24px 50px rgba(0,0,0,.55))}
+.logowm img{width:min(660px,86%);opacity:.26;filter:brightness(1.3) saturate(1.15)
+ drop-shadow(0 0 11px rgba(224,206,255,.95)) drop-shadow(0 0 30px rgba(167,139,250,.9))
+ drop-shadow(0 0 64px rgba(139,92,246,.7)) drop-shadow(0 22px 48px rgba(0,0,0,.5))}
 .logofull{height:54px;width:auto;object-fit:contain;flex:0 0 auto;
  filter:drop-shadow(0 6px 18px rgba(139,92,246,.5))}
 h1,h2,h3,p{margin:0}
