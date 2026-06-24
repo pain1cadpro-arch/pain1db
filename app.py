@@ -190,10 +190,11 @@ def _shell(body, updated, month=""):
 <title>PainLAB · Sản lượng</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{font-family:'Be Vietnam Pro','Segoe UI',-apple-system,system-ui,sans-serif;
- --num:'Space Grotesk','Be Vietnam Pro',sans-serif;
+:root{font-family:'Epilogue','Segoe UI',-apple-system,system-ui,sans-serif;
+ --num:'JetBrains Mono','Epilogue',monospace;
+ --disp:'Playfair Display',Georgia,'Times New Roman',serif;
  --vio:#c4b5fd;--muted:#9d8fb8;--border:rgba(139,92,246,.22);--card:rgba(30,18,46,.62)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 *{box-sizing:border-box;margin:0}
@@ -223,7 +224,7 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-
  box-shadow:0 8px 22px -6px rgba(139,92,246,.85),inset 0 1px 0 rgba(255,255,255,.28)}
 .logo svg{width:21px;height:21px}
 .eyebrow{color:var(--vio);font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
-h1{font-size:23px;line-height:1.05;letter-spacing:-.02em;
+h1{font-size:27px;font-weight:800;line-height:1.04;letter-spacing:-.01em;
  background:linear-gradient(90deg,#fff,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
 #status{color:var(--muted);font-size:12px;white-space:nowrap;text-align:right}
 main{padding:18px 14px calc(30px + env(safe-area-inset-bottom));max-width:980px;margin:auto;position:relative}
@@ -257,8 +258,9 @@ main{padding:18px 14px calc(30px + env(safe-area-inset-bottom));max-width:980px;
 .cval .mini .y{color:#fbbf24;text-shadow:0 0 14px rgba(251,191,36,.5)}
 .cval .mini .p{color:#c4b5fd;text-shadow:0 0 14px rgba(139,92,246,.5)}
 .cval .mini span{color:var(--muted);opacity:.55;font-weight:400}
-/* So lieu dung font hien thi + tabular nums (taste: data-heavy) */
-.card strong,.cval .tot,.cval .mini b,.tab i,h1{font-family:var(--num);font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+/* So lieu = mono JetBrains (canh cot); tieu de = serif Playfair (tuong phan) */
+.card strong,.cval .tot,.cval .mini b,.tab i{font-family:var(--num);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+h1,h2{font-family:var(--disp)}
 .seclbl{font-size:12px;font-weight:800;color:#cdbdf0;text-transform:uppercase;letter-spacing:.08em;
  margin:2px 4px 11px}
 .seclbl span{color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
