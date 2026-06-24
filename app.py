@@ -188,9 +188,14 @@ def _shell(body, updated, month=""):
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#140c1f">
 <title>PainLAB · Sản lượng</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{font-family:Inter,'Segoe UI',-apple-system,system-ui,sans-serif;
+:root{font-family:'Plus Jakarta Sans','Segoe UI',-apple-system,system-ui,sans-serif;
+ --num:'Space Grotesk','Plus Jakarta Sans',sans-serif;
  --vio:#c4b5fd;--muted:#9d8fb8;--border:rgba(139,92,246,.22);--card:rgba(30,18,46,.62)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 *{box-sizing:border-box;margin:0}
 body{min-height:100vh;color:#ece6f7;position:relative;overflow-x:hidden;
  background:#120a1e}
@@ -213,10 +218,10 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-
  gap:14px;padding:max(18px,env(safe-area-inset-top)) 18px 16px;background:rgba(18,10,30,.72);
  border-bottom:1px solid var(--border);backdrop-filter:blur(22px) saturate(130%)}
 .brand{display:flex;align-items:center;gap:12px}
-.logo{width:38px;height:38px;flex:0 0 auto;border-radius:12px;display:grid;place-items:center;
+.logo{width:40px;height:40px;flex:0 0 auto;border-radius:13px;display:grid;place-items:center;
  background:conic-gradient(from 140deg,#7c3aed,#c4b5fd,#ec4899,#7c3aed);
- box-shadow:0 6px 20px -6px rgba(139,92,246,.8);transform:rotate(8deg)}
-.logo b{transform:rotate(-8deg);font-size:18px}
+ box-shadow:0 8px 22px -6px rgba(139,92,246,.85),inset 0 1px 0 rgba(255,255,255,.28)}
+.logo svg{width:21px;height:21px}
 .eyebrow{color:var(--vio);font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
 h1{font-size:23px;line-height:1.05;letter-spacing:-.02em;
  background:linear-gradient(90deg,#fff,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -224,8 +229,18 @@ h1{font-size:23px;line-height:1.05;letter-spacing:-.02em;
 main{padding:18px 14px calc(30px + env(safe-area-inset-bottom));max-width:980px;margin:auto;position:relative}
 .summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .card,.panel,.case-row{border:1px solid var(--border);border-radius:22px;background:var(--card);
- box-shadow:0 18px 44px rgba(10,5,20,.45);backdrop-filter:blur(16px) saturate(130%)}
-.card{position:relative;overflow:hidden;min-height:116px;padding:18px;display:flex;flex-direction:column;justify-content:space-between}
+ box-shadow:0 18px 44px rgba(10,5,20,.45),inset 0 1px 0 rgba(255,255,255,.07);backdrop-filter:blur(16px) saturate(130%)}
+.card{position:relative;overflow:hidden;min-height:116px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;
+ animation:fadeUp .5s cubic-bezier(.22,1,.36,1) backwards;
+ transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s,border-color .28s}
+.summary .card:hover{transform:translateY(-3px);border-color:rgba(139,92,246,.5);
+ box-shadow:0 28px 54px -16px rgba(124,58,237,.5),inset 0 1px 0 rgba(255,255,255,.12)}
+.summary .card:nth-child(2){animation-delay:.05s}
+.summary .card:nth-child(3){animation-delay:.1s}
+.summary .card:nth-child(4){animation-delay:.15s}
+.summary .card:nth-child(5){animation-delay:.2s}
+.summary .card:nth-child(6){animation-delay:.25s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .card::after{content:"";position:absolute;right:-22px;top:-22px;width:80px;height:80px;border-radius:50%;
  background:radial-gradient(circle,rgba(139,92,246,.30),transparent 70%)}
 .card span{color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
@@ -242,6 +257,8 @@ main{padding:18px 14px calc(30px + env(safe-area-inset-bottom));max-width:980px;
 .cval .mini .y{color:#fbbf24;text-shadow:0 0 14px rgba(251,191,36,.5)}
 .cval .mini .p{color:#c4b5fd;text-shadow:0 0 14px rgba(139,92,246,.5)}
 .cval .mini span{color:var(--muted);opacity:.55;font-weight:400}
+/* So lieu dung font hien thi + tabular nums (taste: data-heavy) */
+.card strong,.cval .tot,.cval .mini b,.tab i,h1{font-family:var(--num);font-variant-numeric:tabular-nums;letter-spacing:-.015em}
 .seclbl{font-size:12px;font-weight:800;color:#cdbdf0;text-transform:uppercase;letter-spacing:.08em;
  margin:2px 4px 11px}
 .seclbl span{color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
@@ -257,8 +274,8 @@ h2{font-size:16px;color:#efe9fb;font-weight:800;letter-spacing:.01em}
 .bar{transform:scaleY(0);transform-origin:bottom;transform-box:fill-box;
  animation:grow .6s cubic-bezier(.2,.85,.25,1) forwards;animation-delay:calc(var(--i)*.035s)}
 @keyframes grow{to{transform:scaleY(1)}}
-.cv{fill:#c4b5fd;font-size:11px;font-weight:800}
-.cd{fill:#8b7caa;font-size:10px}
+.cv{fill:#c4b5fd;font-size:11px;font-weight:700;font-family:var(--num)}
+.cd{fill:#8b7caa;font-size:10px;font-family:var(--num)}
 .daydate{color:var(--vio);font-size:13px;font-weight:700;background:rgba(139,92,246,.14);
  padding:5px 12px;border-radius:10px;border:1px solid var(--border)}
 .periods{display:flex;gap:6px;background:rgba(15,8,26,.6);border:1px solid var(--border);
@@ -279,7 +296,8 @@ h2{font-size:16px;color:#efe9fb;font-weight:800;letter-spacing:.01em}
  box-shadow:0 6px 18px -8px rgba(139,92,246,.9)}
 .tab.active i{background:rgba(255,255,255,.25);color:#fff}
 .case-list{display:grid;gap:11px}
-.case-row{padding:15px 16px;transition:transform .14s,border-color .14s,background .14s}
+.case-row{padding:15px 16px;animation:fadeUp .4s cubic-bezier(.22,1,.36,1) backwards;
+ transition:transform .22s cubic-bezier(.22,1,.36,1),border-color .22s,background .22s}
 .case-row:hover{border-color:rgba(139,92,246,.55);background:rgba(45,28,66,.72);transform:translateY(-2px)}
 .row-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .case-row h3{margin-top:9px;font-size:18px;color:#f3eeff;word-break:break-word}
@@ -294,7 +312,7 @@ h2{font-size:16px;color:#efe9fb;font-weight:800;letter-spacing:.01em}
 @media(min-width:700px){.summary{grid-template-columns:repeat(3,1fr)}}
 </style></head><body>
 <div class="mesh"></div><div class="grid"></div>
-<header><div class="brand"><span class="logo"><b>🦷</b></span>
+<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2c-3-2.1-6.6-.9-7.6 2.2C3.2 9.6 5 13.4 6 17.4c.5 2 .8 2.9 1.7 2.9 1.2 0 1-2 1.8-4 .3-.8.6-1.1 1.5-1.1s1.2.3 1.5 1.1c.8 2 .6 4 1.8 4 .9 0 1.2-.9 1.7-2.9 1-4 2.8-7.8 1.6-11C18.6 3.3 15 2.1 12 4.2Z"/></svg></span>
 <div><p class="eyebrow">PainLAB</p><h1>Tổng quan sản lượng</h1></div></div>
 <span id="status">⟳ """ + esc(updated) + ("" if not month else " · " + esc(month)) + """</span></header>
 <main>""" + body + """</main>
